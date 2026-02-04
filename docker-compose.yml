@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: axiom-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: axiom_db
+      MYSQL_USER: axiom_user
+      MYSQL_PASSWORD: change_this_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: axiom-server
+    environment:
+      NODE_ENV: development
+      DATABASE_HOST: mysql
+      DATABASE_PORT: 3306
+      DATABASE_USER: axiom_user
+      DATABASE_PASSWORD: change_this_password
+      DATABASE_NAME: axiom_db
+      DATABASE_URL: mysql://axiom_user:change_this_password@mysql:3306/axiom_db
+      JWT_SECRET: jwt_test_secret_for_local_use_only_please_rotate
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - ./server:/app/server
+      - /app/server/node_modules
+
+volumes:
+  mysql_data:
